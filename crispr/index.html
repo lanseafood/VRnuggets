@@ -29,9 +29,16 @@
       var scale = 1;
       var cas;
 
+      // lanssie
+      var bacteria;
+      var virus;
+
       var is1pressed = false;
       var is2pressed = false;
       var is3pressed = false;
+      var is4pressed = false;
+      var is5pressed = false;
+      var is6pressed = false;
 
       // color palette
       var colors = {
@@ -41,9 +48,64 @@
         pink: 0xF5986E,
         brownDark: 0x23190f,
         blue: 0x68c3c0,
+        green: 0x67c567,
       };
 
       // objects ---
+      Bacteria = function() {
+        this.obj = new THREE.Object3D();
+        
+        var geometry = new THREE.BoxGeometry(20,20,20);
+        var material = new THREE.MeshPhongMaterial({
+          color: colors.blue,  
+        });
+
+        for(var i=0; i<6; i++) {
+          // make a mesh
+          var tempMesh = new THREE.Mesh(geometry, material);
+          
+          tempMesh.position.x = i*5;
+          tempMesh.position.y = Math.random() * 10;
+
+          tempMesh.rotation.y = Math.random() * Math.PI * 2;
+          tempMesh.rotation.z = Math.random() * Math.PI * 2;
+
+          // allow each cube to cast and receive shadows
+          tempMesh.castShadow = true;
+          tempMesh.receiveShadow = true;
+
+          // add the cube to the container
+          this.obj.add(tempMesh);
+        }
+      }
+
+      Virus = function(){
+        this.obj = new THREE.Object3D();
+        
+        var geometry = new THREE.BoxGeometry(3,3,3);
+        var material = new THREE.MeshPhongMaterial({
+          color: colors.green,  
+        });
+
+        for(var i=0; i<3; i++) {
+          // make a mesh
+          var tempMesh = new THREE.Mesh(geometry, material);
+          
+          tempMesh.position.x = i*.2;
+          tempMesh.position.y = Math.random() * 4;
+
+          tempMesh.rotation.y = Math.random() * Math.PI * 2;
+          tempMesh.rotation.z = Math.random() * Math.PI * 2;
+
+          // allow each cube to cast and receive shadows
+          tempMesh.castShadow = true;
+          tempMesh.receiveShadow = true;
+
+          // add the cube to the container
+          this.obj.add(tempMesh);
+        }
+      }
+
       Ribosome = function() {
         // Create an empty container that will hold the different parts of the shape
         
@@ -149,6 +211,15 @@
         if(keyCode == 51) {
           is3pressed = true;  
         }
+        if(keyCode == 52) {
+          is4pressed = true;
+        }
+        if(keyCode == 53) {
+          is5pressed = true;
+        }
+        if(keyCode == 54) {
+          is6pressed = true;
+        }
       }
 
       // main ---
@@ -237,11 +308,21 @@
 
 
         // 5. add objects
+        bacteria = new Bacteria();
+        bacteria.name = 'bacteria';
+        bacteria.obj.position.x = -60;
+        bacteria.obj.position.y = -30;
+        scene.add(bacteria.obj);
+
+        virus = new Virus();
+        virus.name = 'virus';
+        virus.obj.position.x = 3;
+        virus.obj.position.y = 30;
+
         ribosome = new Ribosome();
         ribosome.name = 'ribosome';
         ribosome.obj.position.x = 30;
         ribosome.obj.position.y = 8;
-        scene.add(ribosome.obj);
 
         var dnaGeometry = new THREE.BoxGeometry(60, 1, 1);
         var dnaMaterial = new THREE.MeshPhongMaterial({
@@ -250,22 +331,21 @@
         dna = new THREE.Mesh(dnaGeometry, dnaMaterial);
         dna.name = 'dna';
         dna.position.y = 10;
-        scene.add(dna);
 
         var path = new CustomSinCurve(1);
         var rnaGeometry = new THREE.TubeGeometry(path, 64, 0.5, 8, false);
         var rnaMaterial = new THREE.MeshNormalMaterial( { color: 0x3D98D4 } );
-        var rna = new THREE.Mesh(rnaGeometry, rnaMaterial);
+        rna = new THREE.Mesh(rnaGeometry, rnaMaterial);
         rna.name = 'rna'
         rna.position.x = 30;
         rna.position.y = 5;
-        scene.add(rna);
+        // scene.add(rna);
 
         cas = new Cas();
         cas.name = 'cas';
         cas.obj.position = -15;
         cas.obj.position.y = -30;
-        scene.add(cas.obj);
+        // scene.add(cas.obj);
 
         container = document.getElementById('world');
         container.appendChild(renderer.domElement);
@@ -282,9 +362,41 @@
         // visualize the scene using the camera
         renderer.render(scene, camera);
 
-        // 1. ribosome moves across dna
-        var rna = scene.getObjectByName('rna')
+        // bacteria floating 
         if(is1pressed) {
+          if(bacteria.obj.position.x < -25) {
+            bacteria.obj.position.x += 0.2;
+          }
+        }
+
+        // virus attaches to bacteria
+
+        if(is2pressed) {
+          scene.add(virus.obj);
+          var y = bacteria.obj.position.y + 20;
+          if(virus.obj.position.y > y) {
+            virus.obj.position.y -= 0.3;
+          }
+          
+        }
+
+        // virus rna inserted into bacteria
+        if(is3pressed) {
+          var size = bacteria.obj.scale.x
+          if (bacteria.obj.scale.x < 200000) {
+            size += 5
+            bacteria.obj.scale.set(size);
+            virus.obj.scale.set(size);
+          }
+          
+          scene.add(dna);
+        }
+
+        // 4. ribosome moves across dna
+        if(is4pressed) {
+          scene.add(ribosome.obj);
+          scene.add(rna);
+
           if(ribosome.obj.position.x > -25) {
             ribosome.obj.position.x -= 0.2;
 
@@ -294,8 +406,8 @@
           }
         }
 
-        // 2. ribosome falls away
-        if(is2pressed) {
+        // 5. ribosome falls away
+        if(is5pressed) {
           if(ribosome.obj.position.x > -700) {
             ribosome.obj.position.x -= 3;
             ribosome.obj.position.y -= 3;
@@ -303,8 +415,9 @@
           }
         }
 
-        // 3. cas attaches to rna
-        if(is3pressed) {
+        // 6. cas attaches to rna
+        if(is6pressed) {
+            scene.add(cas.obj);
             if(cas.obj.position.x <= 9) {
             cas.obj.position.x += 0.2;
           }
