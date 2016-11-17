@@ -39,6 +39,10 @@
       var is4pressed = false;
       var is5pressed = false;
       var is6pressed = false;
+      var is7pressed = false;
+      var is8pressed = false;
+      var is9pressed = false;
+
 
       // color palette
       var colors = {
@@ -147,13 +151,13 @@
         
         this.obj = new THREE.Object3D();
         
-        var geometry = new THREE.BoxGeometry(7,7,7);
+        var geometry = new THREE.BoxGeometry(12,12,12);
         var material = new THREE.MeshPhongMaterial({
           color: colors.red,  
         });
 
         // var numBlocks = Math.floor(Math.random() * 3) + 3;
-        for(var i=0; i<2; i++) {
+        for(var i=0; i<9; i++) {
           // make a mesh
           var tempMesh = new THREE.Mesh(geometry, material);
           
@@ -219,6 +223,15 @@
         }
         if(keyCode == 54) {
           is6pressed = true;
+        }
+        if(keyCode == 55) {
+          is7pressed = true;
+        }
+        if(keyCode == 56) {
+          is8pressed == true;
+        }
+        if(keyCode == 57) {
+          is9pressed == true;
         }
       }
 
@@ -325,12 +338,20 @@
         ribosome.obj.position.y = 8;
 
         var dnaGeometry = new THREE.BoxGeometry(60, 1, 1);
+        var ndnaGeometry = new THREE.BoxGeometry(30, 1, 1);
         var dnaMaterial = new THREE.MeshPhongMaterial({
           color: colors.blue,  
         });
         dna = new THREE.Mesh(dnaGeometry, dnaMaterial);
         dna.name = 'dna';
         dna.position.y = 10;
+        ndna1 = new THREE.Mesh(ndnaGeometry, dnaMaterial);
+        ndna1.name = 'ndna1';
+        ndna1.position.y = 5;
+        ndna2 = new THREE.Mesh(ndnaGeometry, dnaMaterial);
+        ndna2.name = 'ndna2';
+        ndna2.position.y = 5;
+        
 
         var path = new CustomSinCurve(1);
         var rnaGeometry = new THREE.TubeGeometry(path, 64, 0.5, 8, false);
@@ -417,16 +438,51 @@
 
         // 6. cas attaches to rna
         if(is6pressed) {
-            scene.add(cas.obj);
-            if(cas.obj.position.x <= 9) {
-            cas.obj.position.x += 0.2;
+          scene.add(cas.obj);
+          if(cas.obj.position.x >= -25) {
+            cas.obj.position.x -= 0.2;
           }
           if(cas.obj.position.y <= -3.5) {
             cas.obj.position.y += 0.2;
           }
         }
-      }
+      
+        if(is7pressed) {
+          scene.add(dna);
+          if (dna.position.x > 0) {
+            dna.position.x -= 1;
+          }
+          if(dna.position.y > 5) {
+            dna.position.y -= 1;
+          }
+          // scene.add(ndna2);
+          // ndna2.position.x = 30;
+          // document.write(ndna1.position.x);
+          // if(ndna1.position.y >= 8) {
+            // ndna1.position.y -= 2;
+            // ndna2.position.y -= 2;
+          // }
+        }
 
+        if(is8pressed) {
+            //zoom in
+          scene.remove(dna);
+          scene.add(ndna1);
+          scene.add(ndna2);
+          ndna1.position.x = 0;
+          ndna2.position.x = 30;
+          if(ndna2.position.x > 15){
+            ndna2.position.x -= 1;
+          }
+          if(ndna1.position.x > -15) {
+            ndna1.position.x -= 1;
+          }
+
+        }
+        if(is9pressed) {
+          document.write('hi');
+        }
+      }
       // run ---
 
       window.onload = init;
