@@ -267,7 +267,12 @@ function init() {
   camera.position.z = 46;
   camera.position.y = 43;
   camera.lookAt(scene.position);
-
+  // var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+  // var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 2, FAR = 5000;
+  // camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+  // scene.add(camera);
+  // camera.position.set(0,200,400);
+  // camera.lookAt(scene.position);
 
   // 4. add lights
   // A hemisphere light is a gradient colored light; 
@@ -361,7 +366,7 @@ function init() {
   
   ndna1 = new THREE.Mesh(ndnaGeometry, dnaMaterial);
   ndna1.name = 'ndna1';
-  ndna1.position.x = 5;
+  ndna1.position.x = 0;
   ndna1.position.y = 10;
 
   ndna2 = new THREE.Mesh(ndnaGeometry, dnaMaterial);
@@ -458,8 +463,8 @@ function render() {
   // 5. ribosome falls away
   if(is5pressed) {
     if(ribosome.obj.position.x > -700) {
-      ribosome.obj.position.x -= 3;
-      ribosome.obj.position.y -= 3;
+      ribosome.obj.position.x -= 5;
+      ribosome.obj.position.y -= 5;
       dna.position.y -= 1;
       console.log('5');
     }
@@ -469,27 +474,26 @@ function render() {
   if(is6pressed) {
     scene.add(cas.obj);
     if(cas.obj.position.x >= -25) {
-      cas.obj.position.x -= 0.2;
+      cas.obj.position.x -= 0.5;
     }
     if(cas.obj.position.y <= -3.5) {
-      cas.obj.position.y += 0.2;
+      cas.obj.position.y += 0.5;
       console.log('6');
     }
+    scene.remove(dna);
   }
 
   if(is7pressed) {
-    // dna starts at (0,-215)
-    if(dna.position.y < 5) {
+    scene.add(dna);
+
+    cas.obj.position.y +=3;
+    console.log('7x: ' + dna.position.x + ', 7y: ' + dna.position.y);
+
+    if(dna.position.y <= 5) {
+      console.log('what');
       dna.position.y += 5;
-      console.log('7x: ' + dna.position.x + ', 7y: ' + dna.position.y)
     }
     
-    scene.add(ndna2);
-    if(ndna1.position.y > 8) {
-      ndna1.position.y -= 2;
-      ndna2.position.y -= 2;
-      console.log(ndna1.position.y + ", " + ndna2.position.y);
-    }
   }
 
   if(is8pressed) {
@@ -497,14 +501,12 @@ function render() {
     scene.remove(dna);
     scene.add(ndna1);
     scene.add(ndna2);
-    ndna1.position.x = 0;
-    ndna2.position.x = 30;
-    if(ndna2.position.x > 15){
-      ndna2.position.x -= 1;
-    }
-    if(ndna1.position.x > -15) {
-      ndna1.position.x -= 1;
-    }
+    // ndna1.position.x = 0;
+    // ndna2.position.x = 30;
+    ndna1.position.x -= 2;
+    ndna1.position.y -= .5;
+    ndna2.position.x += 2;
+    ndna2.position.y += .5;
   }
   
   if(is9pressed) {
