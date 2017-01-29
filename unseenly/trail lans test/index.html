@@ -1,0 +1,225 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        background-color: #000000;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      a {
+        color: #0078ff;
+      }
+
+      .dg {
+        right: auto!important;
+        left: 20px!important;
+      }
+      #webglviewer {
+        bottom: 0;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+  <div id="webglviewer"></div>
+    <script src="js/three.js"></script>
+    <script src="js/dat.gui.min.js"></script>
+    <script src="js/GPUParticleSystem.js" charset="utf-8"></script>
+<!--     <script src="js/three.min.js"></script>
+ -->    <script src="js/StereoEffect.js"></script>
+    <script src="js/DeviceOrientationControls.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/helvetiker_regular.typeface.js"></script>
+    <script src="https://timezonedb.googlecode.com/files/timezonedb.js" type="text/javascript"></script>
+  <script>
+    // globals ---
+    var scene;
+    var renderer;
+    var camera;
+
+    var clock = new THREE.Clock(true);
+    var container;
+    var controls;
+    var gui = new dat.GUI()
+    var options;
+    var particleSystem;
+    var spawnerOptions;
+    var tick = 0;
+
+    //globals lans
+    var element, 
+        effect, 
+
+    // Particles
+        particles = new THREE.Object3D(),
+        totalParticles = 200,
+        maxParticleSize = 200,
+        particleRotationSpeed = 0,
+        particleRotationDeg = 0,
+        lastColorRange = [0, 0.3],
+        currentColorRange = [0, 0.3];
+
+
+    // functions ---
+    function handleResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      effect.setSize(window.innerWidth, window.innerHeight);
+
+      // controls.update(clock.getDelta());
+    }
+
+    function init() {
+      scene = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera(28, window.innerWidth / window.innerHeight, 1, 10000);
+      camera.position.set(0,0,100);
+
+      // create a renderer, sets the background color and the size
+      renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.physicallyCorrectLights = true;
+      
+      element = renderer.domElement;
+      container = document.getElementById('webglviewer');
+      container.appendChild(element);
+
+      effect = new THREE.StereoEffect(renderer);
+
+      //in case our vr touch device orientation not enabled. 
+      controls = new THREE.OrbitControls(camera, element);
+      controls.target.set(
+        camera.position.x + 0.15,
+        camera.position.y, 
+        camera.position.z
+        );
+      controls.noPan = true;
+      controls.noZoom = true;
+
+      window.addEventListener('deviceorientation', setOrientationControls, true);
+      // add a scene ----------
+
+      particleSystem = new THREE.GPUParticleSystem({
+        maxParticles: 250000
+      });
+      scene.add(particleSystem);
+
+      // position and point the camera to the center of the scene
+
+      // add controls
+      // options passed during each spawned
+      options = {
+        position: new THREE.Vector3(),
+        positionRandomness: .3,
+        
+        velocity: new THREE.Vector3(),
+        velocityRandomness: .5,
+        
+        color: 0xaa88ff,
+        colorRandomness: .2,
+        
+        turbulence: .5,
+        lifetime: 5,
+        size: 5,
+        sizeRandomness: 1
+      };
+
+      spawnerOptions = {
+        spawnRate: 15000,
+        horizontalSpeed: 1.5,
+        verticalSpeed: 1.33,
+        timeScale: 1
+      };
+
+      gui.add(options, "velocityRandomness", 0, 3);
+      gui.add(options, "positionRandomness", 0, 3);
+      gui.add(options, "size", 1, 20);
+      gui.add(options, "sizeRandomness", 0, 25);
+      gui.add(options, "colorRandomness", 0, 1);
+      gui.add(options, "lifetime", .1, 10);
+      gui.add(options, "turbulence", 0, 1);
+      gui.add(spawnerOptions, "spawnRate", 10, 30000);
+      gui.add(spawnerOptions, "timeScale", -1, 1);
+
+      // set up sound
+
+      // ----------
+
+      // add the output of the renderer to the html element
+      document.body.appendChild(renderer.domElement);
+
+      // call the render function, after the first render, interval is determined
+      // by requestAnimationFrame
+      render();
+    }
+
+// Our preferred controls via DeviceOrientation
+    function setOrientationControls(e) {
+      if (!e.alpha) {
+        return;
+      }
+
+      controls = new THREE.DeviceOrientationControls(camera, true);
+      controls.connect();
+      controls.update();
+
+      element.addEventListener('click', fullscreen, false);
+
+      window.removeEventListener('deviceorientation', setOrientationControls, true);
+    }
+
+    function render() {
+      var delta = clock.getDelta() * spawnerOptions.timeScale;
+      tick += delta;
+
+      if (tick < 0) {
+        tick = 0;
+      }
+
+      if (delta > 0) {
+        // options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
+        options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
+        // options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
+
+        options.velocity.x = -5;
+
+        for (var x=0; x<spawnerOptions.spawnRate * delta; x++) {
+          // Yep, that's really it. Spawning particles is super cheap, and once you spawn them, the rest of
+          // their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+          particleSystem.spawnParticle(options);
+        }
+      }
+
+      particleSystem.update(tick);
+
+
+
+      renderer.render(scene, camera);
+
+      requestAnimationFrame(render);
+
+      effect.render(scene, camera);
+    }
+
+    // main ---
+
+    // calls the init function when the window is done loading.
+    window.onload = init;
+
+    // calls the handleResize function when the window is resized
+    window.addEventListener('resize', handleResize, false);
+ 
+  </script>
+</body>
+
+</html>
