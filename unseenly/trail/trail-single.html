@@ -96,9 +96,9 @@
         // light.position.set(-1,0,1);
         // scene.add(light);
 
-        pointLight = createLight(0xffffff);
-        pointLight.y = -20;
-        scene.add(pointLight);
+        // pointLight = createLight(0xffffff);
+        // pointLight.y = -20;
+        // scene.add(pointLight);
 
         // environment ----------
 
@@ -225,7 +225,7 @@
         camera.lookAt(scene.position);
 
         // update point light
-        pointLight.position.y = beat-20;
+        // pointLight.position.y = beat-20;
         // pointLight.intensity = Math.sin(beat) * 10;
         // pointLight.intensity = 10;
 
@@ -249,6 +249,7 @@
         colorIndex = parseInt(tick) % colors.length;
         emitter.color.value = new THREE.Color(colors[colorIndex]);
         emitter.position.value.y = beat-20;
+        emitter.position.value.z = Math.sin(tick * 1.5) * 10;
         // console.log(emitter.position.value.y);
         particleGroup.tick(delta);
         
