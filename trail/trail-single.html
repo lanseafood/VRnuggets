@@ -17,6 +17,7 @@
     <script src="js/dat.gui.min.js"></script>
     <!-- <script src="js/GPUParticleSystem.js" charset="utf-8"></script> -->
     <script src="js/SPE.min.js" charset="utf-8"></script>
+    <script src="js/CCapture.all.min.js"></script>
 
 
     <script>
@@ -48,6 +49,8 @@
       var data;
       var beat;
       var maxBeat = 0;
+
+      var capturer = new CCapture( { format: 'webm' } );
 
       // functions ----------
 
@@ -206,6 +209,8 @@
         // call the render function, after the first render, interval is determined
         // by requestAnimationFrame
         render();
+
+        // capturer.start();
       }
 
       function render() {
@@ -259,6 +264,9 @@
         renderer.render(scene, camera);
 
         requestAnimationFrame(render);
+
+        // var canvas = 
+        // capturer.capture(canvas);
       }
 
       // main ----------
