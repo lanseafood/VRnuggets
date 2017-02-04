@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <link href="css/main.css" rel="stylesheet" />
+    
+    <script src="js/three.min.js"></script>
+    <script src='js/OrbitControls.js'></script>
+    <!-- Include tar.js if you want to export PNG or JPEG -->
+    <script src="js/tar.js"></script>
+    <!-- Include download.js for easier file download -->
+    <script src="js/download.js"></script>
+    <!-- 360 capture section -->
+    <script src="js/CubemapToEquirectangular.js"></script>
+  </head>
+  <body>
+    <div id="container"></div>
+
+    <div id="controls">
+      <button class="startButton" onclick="startCapture360()">Record</button>
+      <button class="stopButton" onclick="stopCapture360()">Stop</button>
+    </div>
+
+    <!-- movie capture section -->
+    <script src="js/CCapture.js"></script>
+
+    <script> 
+      // globals ---
+      var scene;
+      var camera;
+      var renderer;
+
+      var controls;
+
+      var center;
+      var left;
+      var right;
+
+      // Create a capturer that exports Equirectangular 360 JPG images in a TAR file
+      var capturer360 = new CCapture({
+        format: 'threesixty',
+        display: true,
+        autoSaveTime: 3,
+      });
+
+      function startCapture360(event) {
+        capturer360.start();
+      }
+
+      function stopCapture360(event) {
+        capturer360.stop();
+        capturer360.save();
+      }
+
+      // functions
+      function handleResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function init() {
+        // create a scene, that will hold all the elements such as objects, cameras and lights.
+        scene = new THREE.Scene();
+
+        // create a camera, which defines where you're looking at.
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 1; // needs to be >0 for orbit controls to work
+
+        // create a renderer, sets the background color and the size
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // add a managed CubemapToEquirectangular camera
+        equiManaged = new CubemapToEquirectangular(renderer, true, "4K");
+        
+        // set up orbit controls
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // start world ---
+        
+        // front
+        geometry = new THREE.BoxGeometry(200, 200, 200);
+        material = new THREE.MeshBasicMaterial({
+          color: 0x4285F4,
+          wireframe: false
+        });
+        _front = new THREE.Mesh(geometry, material);
+        _front.position.z = -400;
+        scene.add(_front);
+
+        // right
+        geometry = new THREE.BoxGeometry(200, 200, 200);
+        material = new THREE.MeshBasicMaterial({
+          color: 0xEA4335,
+          wireframe: false
+        });
+        _right = new THREE.Mesh(geometry, material);
+        _right.position.x = 400;
+        scene.add(_right);
+
+        // back
+        geometry = new THREE.BoxGeometry(200, 200, 200);
+        material = new THREE.MeshBasicMaterial({
+          color: 0xFAC01D,
+          wireframe: false
+        });
+        _back = new THREE.Mesh(geometry, material);
+        _back.position.z = 400;
+        scene.add(_back);
+
+        // left
+        geometry = new THREE.BoxGeometry(200, 200, 200);
+        material = new THREE.MeshBasicMaterial({
+          color: 0x34A853,
+          wireframe: false
+        });
+        _left = new THREE.Mesh(geometry, material);
+        _left.position.x = -400;
+        scene.add(_left);
+
+        // top
+        geometry = new THREE.BoxGeometry(200, 200, 200);
+        material = new THREE.MeshBasicMaterial({
+          color: 0x4285F4,
+          wireframe: false
+        });
+        _top = new THREE.Mesh(geometry, material);
+        _top.position.y = 400
+        scene.add(_top);
+
+        // bottom
+        geometry = new THREE.BoxGeometry(200, 200, 200);
+        material = new THREE.MeshBasicMaterial({
+          color: 0xEA4335,
+          wireframe: false
+        });
+        _bottom = new THREE.Mesh(geometry, material);
+        _bottom.position.y = -400
+        scene.add(_bottom);
+
+        // light
+        var light = new THREE.AmbientLight( 0x404040 ); 
+        scene.add(light);
+
+        // end world ---
+
+        // add the output of the renderer to the html element
+        // document.body.appendChild(renderer.domElement);
+        var container = document.getElementById('container');
+        container.appendChild(renderer.domElement);
+        
+        // call the render function, after the first render, interval is determined
+        // by requestAnimationFrame
+        render();
+      }
+
+
+      function render() {
+        // center.rotation.x += 0.01;
+        // center.rotation.y += 0.02;
+
+        // ---
+        
+        renderer.render(scene, camera);
+
+        requestAnimationFrame(render);
+
+        controls.update();
+
+        // add at the end of your render loop
+        capturer360.capture(renderer.domElement);
+      }
+
+
+      // calls the handleResize function when the window is resized
+      window.addEventListener('resize', handleResize, false);
+
+      // calls the init function when the window is done loading.
+      window.onload = init;
+    </script>
+  </body>
+</html>
