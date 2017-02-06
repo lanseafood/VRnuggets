@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <style>
+      .media {
+        display: none;
+      }
+
+
+      /*temp*/
+      .container {
+        margin: 20px auto;
+      }
+
+      @media (min-width: 1200px) {
+        .container {
+          width: 750px;
+        }
+      }
+      @media (min-width: 992px) {
+        .container {
+          width: 750px;
+        }
+      }
+      @media (min-width: 768px) {
+        .container {
+          width: 750px;
+        }
+      }
+
+      .media-object {
+        width: 96px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main">
+      <div class="container">
+        
+        <form id="song">
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="Search">
+          </div>
+        </form>
+        
+        <div class="media">
+          <div class="media-left">
+            <img class="media-object" src="">
+          </div>
+          <div class="media-body">
+            <h4 class="media-heading"></h4>
+            <p></p>
+            <audio controls=controls src=""></audio>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script>
+      var main = function() {
+        $("#song").submit(function(event) {
+          // get the input
+          var query = $("input:first").val();
+
+          // search input against spotify api
+          // https://api.spotify.com/v1/search?q=artist:Lady+Gaga+title:Bad+Romance&type=track&limit=1
+          $.get("https://api.spotify.com/v1/search", {
+            q: query,
+            type: 'track',
+            limit: 1
+          }).done(function(data) {
+            var name = data.tracks.items[0].name;
+            var cover = data.tracks.items[0].album.images[0].url;
+            var artist = data.tracks.items[0].artists[0].name;
+            var preview_url = data.tracks.items[0].preview_url;
+
+            $('.media img').attr('src', cover);
+            $('.media-body .media-heading').text(name);
+            $('.media-body p').text(artist);
+            $('.media-body audio').attr('src', preview_url);
+          });
+
+          // display the template
+          $('.media').show();
+
+          // prevent the form from submitting
+          event.preventDefault();
+        })
+      }
+
+      $(document).ready(main);
+    </script>
+  </body>
+</html>
