@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <link href="css/main.css" rel="stylesheet" />
+    
+    <script src="js/three.min.js"></script>
+    <script src='js/OrbitControls.js'></script>
+    <!-- Include tar.js if you want to export PNG or JPEG -->
+    <script src="js/tar.js"></script>
+    <!-- Include download.js for easier file download -->
+    <script src="js/download.js"></script>
+    <!-- 360 capture section -->
+    <script src="js/CubemapToEquirectangular.js"></script>
+  </head>
+  <body>
+    <div id="container"></div>
+
+    <div id="controls">
+      <button class="startButton" onclick="startCapture360()">Record</button>
+      <button class="stopButton" onclick="stopCapture360()">Stop</button>
+    </div>
+
+    <!-- movie capture section -->
+    <script src="js/CCapture.js"></script>
+
+    <script> 
+      // globals ---
+      var scene;
+      var camera;
+      var renderer;
+
+      var controls;
+
+      var center;
+      var left;
+      var right;
+
+      var audio;
+      var audioContext;
+      var analyser;
+      var len;
+      var source;
+      var fbc_array;
+      var data;
+      var total;
+
+      var spheres = [];
+
+      // Create a capturer that exports Equirectangular 360 JPG images in a TAR file
+      var capturer360 = new CCapture({
+        format: 'threesixty',
+        display: true,
+        autoSaveTime: 3,
+      });
+
+      function startCapture360(event) {
+        capturer360.start();
+      }
+
+      function stopCapture360(event) {
+        capturer360.stop();
+        capturer360.save();
+      }
+
+      // functions
+      function handleResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function getRandomInt(min, max) {
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min)) + min;
+      }
+
+      function init() {
+        // create a scene, that will hold all the elements such as objects, cameras and lights.
+        scene = new THREE.Scene();
+
+        // create a camera, which defines where you're looking at.
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 1; // needs to be >0 for orbit controls to work
+
+        // create a renderer, sets the background color and the size
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // add a managed CubemapToEquirectangular camera
+        equiManaged = new CubemapToEquirectangular(renderer, true, "4K");
+        
+        // set up orbit controls
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // start world ---
+
+        for(var i=0; i<Math.PI *2; i+=(Math.PI/10)) {
+          for(var j=-500; j<500; j+= 20) {
+            geometry = new THREE.SphereGeometry(1, 16, 50);
+            material = new THREE.MeshBasicMaterial({
+              color: 0x4285F4,
+              wireframe: true
+            });
+            var s = new THREE.Mesh(geometry, material);
+            s.position.z = Math.cos(i) * 200;
+            s.position.x = Math.sin(i) * 200;
+            s.position.y = j;
+            scene.add(s);
+            spheres.push(s);
+          }
+        }
+
+        // light
+        var light = new THREE.AmbientLight( 0x404040 ); 
+        scene.add(light);
+
+        // set up sound
+        audio = new Audio();
+        audio.src = 'opus.mp3';
+        audio.autoplay = true;
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext);
+        
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 1024; // change this to more or less triangles
+
+        len = analyser.fftSize / 16;
+
+        source = audioContext.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        // end world ---
+
+        // add the output of the renderer to the html element
+        // document.body.appendChild(renderer.domElement);
+        var container = document.getElementById('container');
+        container.appendChild(renderer.domElement);
+        
+        // call the render function, after the first render, interval is determined
+        // by requestAnimationFrame
+        render();
+      }
+
+
+      function render() {
+        fbc_array = new Uint8Array(analyser.frequencyBinCount);   // frequencyBinCount = 512
+        analyser.getByteFrequencyData(fbc_array);  // fill fbc_array with audio data 
+        var intensity = fbc_array.reduce(function(a, b) { return a + b; });
+        intensity *= 0.0001;
+
+        for(var i=0; i<spheres.length; i++) {
+          var randInt = getRandomInt(1, 100);
+          if((randInt % 8) == 0) {
+            spheres[i].scale.x = intensity;
+            spheres[i].scale.y = intensity;
+            spheres[i].scale.z = intensity;  
+
+            var hue = getRandomInt(0, 360);
+            spheres[i].material.color = new THREE.Color("hsl(" + hue + ", 100%, 50%)");
+          }
+          else {
+            if(spheres[i].scale.x > 0) {
+              spheres[i].scale.x -= 0.1;
+              spheres[i].scale.y -= 0.1;
+              spheres[i].scale.z -= 0.1;  
+            }
+          }
+        }
+
+
+        // ---
+        
+        renderer.render(scene, camera);
+
+        requestAnimationFrame(render);
+
+        controls.update();
+
+        // add at the end of your render loop
+        capturer360.capture(renderer.domElement);
+      }
+
+
+      // calls the handleResize function when the window is resized
+      window.addEventListener('resize', handleResize, false);
+
+      // calls the init function when the window is done loading.
+      window.onload = init;
+    </script>
+  </body>
+</html>
