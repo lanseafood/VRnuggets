@@ -1,0 +1,14 @@
+Lanssie Writeup:
+
+main idea:
+Showcase the movement of a dance performance through a visual light show, where the motion is represented through groups of light. 
+
+how it works:
+We took data from a flex sensor and accelerometer from each hand and arm. 
+First, processing the data:
+processing only the changes in movement in x y and z axis and flex data. 
+for example, if changed in x and y but not z, and the changes in x was right and y was up, then we would record (-1, 1, 0). + or - 1 for the change in direction on each axis. 
+
+for flex data, we processed the minimum and maximum values and split the movement into thirds, and processed data into groups (small, medium, and high) force. 
+
+This processed data then went into a WebVR application, built in javascript using ThreeJS. This was a visualization of each hands and arm's movements. The two hands are each a ball of light, surrounded by smaller colorful lights that represent the movement. The for every shift in the hand movement, we shift the light by a pusle factor depending on the positive or negative direction of motion. For the flex motion, we rotate each x,y,and z direction for the whole groups and changed the scale of the particle groups as well. 
