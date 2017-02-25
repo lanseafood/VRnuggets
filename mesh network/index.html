@@ -143,7 +143,7 @@
         colors = new Float32Array( segments * 3 );
         var pMaterial = new THREE.PointsMaterial( {
           color: c,
-          size: 3,
+          size: 10,
           blending: THREE.AdditiveBlending,
           transparent: true,
           sizeAttenuation: false
@@ -176,11 +176,13 @@
         geometry.setDrawRange( 0, 0 );
         var material = new THREE.LineBasicMaterial( {
           color: c,
+          linewidth: 5,
           vertexColors: THREE.VertexColors,
           blending: THREE.AdditiveBlending,
           transparent: true
         } );
         linesMesh = new THREE.LineSegments( geometry, material );
+        console.log(linesMesh);
         group.add( linesMesh );
 
         // end world ---
