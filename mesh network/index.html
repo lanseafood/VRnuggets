@@ -6,7 +6,7 @@
     <link href="css/main.css" rel="stylesheet" />
     
     <script src="js/three.min.js"></script>
-    <script src='js/OrbitControls.js'></script>
+    <script src='js/OrbitControls_mod.js'></script>
     <!-- Include tar.js if you want to export PNG or JPEG -->
     <script src="js/tar.js"></script>
     <!-- Include download.js for easier file download -->
@@ -18,16 +18,16 @@
     <div id="container"></div>
 
     <div id="controls">
-      <button class="startButton" onclick="startCapture360()">Record</button>
-      <button class="stopButton" onclick="stopCapture360()">Stop</button>
+      <!-- <button class="startButton" onclick="startCapture360()">Record</button>
+      <button class="stopButton" onclick="stopCapture360()">Stop</button> -->
 
-      <form id="song">
+      <!-- <form id="song">
         <div class="form-group">
           <input type="text" class="form-control" placeholder="Search">
         </div>
-      </form>
+      </form> -->
 
-      <audio id="myaudio" controls=controls src="" crossOrigin="anonymous"></audio>
+      <audio id="myaudio" controls="controls" src="https://p.scdn.co/mp3-preview/8d3df1c64907cb183bff5a127b1525b530992afb?cid=null" crossorigin="anonymous" style="opacity: 0.5;"></audio>
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
