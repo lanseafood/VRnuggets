@@ -13,8 +13,6 @@
     <script src="js/download.js"></script>
     <!-- 360 capture section -->
     <script src="js/CubemapToEquirectangular.js"></script>
-    <!-- lanssie part -->
-
   </head>
   <body>
     <div id="container"></div>
@@ -22,7 +20,7 @@
     <div id="controls">
       <button class="startButton" onclick="startCapture360()">Record</button>
       <button class="stopButton" onclick="stopCapture360()">Stop</button>
-      <!-- spotify -->
+
       <form id="song">
         <div class="form-group">
           <input type="text" class="form-control" placeholder="Search">
@@ -30,21 +28,21 @@
       </form>
 
       <audio id="myaudio" controls=controls src="" crossOrigin="anonymous"></audio>
-
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    
     <!-- movie capture section -->
     <script src="js/CCapture.js"></script>
 
     <script> 
       // globals ---
+      var scene;
+      var camera;
+      var renderer;
 
-      var center;
-      var left;
-      var right;
+      var controls;
 
-      // spotify
       var audio;
       var audioContext;
       var analyser;
@@ -77,7 +75,6 @@
         particleCount: 500
       };
 
-      var intensity;
       // Create a capturer that exports Equirectangular 360 JPG images in a TAR file
       var capturer360 = new CCapture({
         format: 'threesixty',
@@ -101,22 +98,22 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
+
       function getRandomInt(min, max) {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
         min = Math.ceil(min);
         max = Math.floor(max);
         return Math.floor(Math.random() * (max - min)) + min;
       }
-      init();
-      render();
+
 
       function init() {
         // create a scene, that will hold all the elements such as objects, cameras and lights.
         scene = new THREE.Scene();
 
         // create a camera, which defines where you're looking at.
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 4000);
-        camera.position.z = 200; // needs to be >0 for orbit controls to work
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 1; // needs to be >0 for orbit controls to work
 
         // create a renderer, sets the background color and the size
         renderer = new THREE.WebGLRenderer();
@@ -130,7 +127,7 @@
         controls.enableDamping = true;
 
         // start world ---
-        
+
         group = new THREE.Group();
         scene.add(group);
         var hue = getRandomInt(0, 360);
@@ -188,64 +185,30 @@
 
         // end world ---
 
-        // /render
-        renderer = new THREE.WebGLRenderer( { antialias: true } );
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        renderer.gammaInput = true;
-        renderer.gammaOutput = true;
-
         // add the output of the renderer to the html element
         // document.body.appendChild(renderer.domElement);
         var container = document.getElementById('container');
         container.appendChild(renderer.domElement);
-
+        
         // call the render function, after the first render, interval is determined
         // by requestAnimationFrame
-        // render();
-              // calls the handleResize function when the window is resized
-        window.addEventListener('resize', handleResize, false);
-
+        // renderer.render(scene, camera);
+        render();
       }
-
 
       function render() {
-        // center.rotatin.x += 0.01;
-        // center.rotation.y += 0.02;
-        var time = Date.now() * 0.001;
-        // var v = 10*intensity/1000;
-        // if (v < .01){
-        //   v = .01
-        // }
-        // if (v > 10) {
-        //   v = 10
-        // }
-        // console.log(v);
-        group.rotation.y = time * 0.1;
-        // * (intensity/10000);
-        // console.log(group.rotation.y);
-
-        // --
-
         renderer.render(scene, camera);
 
-        // requestAnimationFrame(render);
+        requestAnimationFrame(render);
 
         controls.update();
-
-        // add at the end of your render loop
-        capturer360.capture(renderer.domElement);
       }
+
+      // calls the handleResize function when the window is resized
+      window.addEventListener('resize', handleResize, false);
 
       // calls the init function when the window is done loading.
-      window.onload = start();
-
-      function start(){
-        init;
-        render;
-        // animate;
-      }
-
+      window.onload = init;
     </script>
 
     <script>
@@ -283,13 +246,8 @@
         audio.onplay = function() {
           console.log('play');
           getSound();
-          resetSpheres();
           renderWithSound();
         }
-
-        // audio.onpause = function() {
-        //   resetSpheres();
-        // }
       }
 
       $(document).ready(main);
@@ -309,53 +267,49 @@
         analyser.connect(audioContext.destination);
       }
 
-      function resetSpheres() {
-        // for(var i=0; i<spheres.length; i++) {
-        //   spheres[i].scale.x = 10;
-        //   spheres[i].scale.y = 10;
-        //   spheres[i].scale.z = 10;
-        // }
-      }
-
-
+      
       function renderWithSound() {
         fbc_array = new Uint8Array(analyser.frequencyBinCount);   // frequencyBinCount = 512
         analyser.getByteFrequencyData(fbc_array);  // fill fbc_array with audio data 
-        intensity = fbc_array.reduce(function(a, b) { return a + b; });
+        var intensity = fbc_array.reduce(function(a, b) { return a + b; });
         intensity *= 0.01;
         // console.log(intensity);
+
         var i = 200*intensity/900;
-        // var i = Math.round((intensity - 100) / (200 - 100));
-        if (i < 100){
+        if (i < 100) {
           i = 100;
         }
-        if (i > 200){
-          i == 200
+        if (i > 200) {
+          i = 200
         }
+
         var hue = (360*intensity)/(900);
-        // console.log(cc);
-        if (hue < 0)
-        {
+        if (hue < 0) {
           hue = 0
         }
         if (hue > 360) {
           hue = 360
         }
-        // var hue = getRandomInt(75, 250);
+
         var c = new THREE.Color("hsl(" + hue + ", 100%, 50%)");
         pointCloud.material.color = c;
         linesMesh.material.color = c;
         // console.log(pointCloud);
+
         var pCountI = 500*intensity/300;
         // console.log(pCountI);
+
         effectController.minDistance = i;
         effectController.particleCount = pCountI;
         var vertexpos = 0;
         var colorpos = 0;
         var numConnected = 0;
-        for ( var i = 0; i < particleCount; i++ )
+
+        for ( var i = 0; i < particleCount; i++ ) {
           particlesData[ i ].numConnections = 0;
           // pointCloud.particle
+        }
+
         for ( var i = 0; i < particleCount; i++ ) {
           // get the particle
           var particleData = particlesData[i];
@@ -401,23 +355,35 @@
             }
           }
         }
+
         linesMesh.geometry.setDrawRange( 0, numConnected * 2 );
         linesMesh.geometry.attributes.position.needsUpdate = true;
         linesMesh.geometry.attributes.color.needsUpdate = true;
         pointCloud.geometry.attributes.position.needsUpdate = true;
-        requestAnimationFrame( renderWithSound );
-        render();
-        // og
-        // renderer.render(scene, camera);
 
-        // requestAnimationFrame(renderWithSound);
+        var time = Date.now() * 0.001;
+        // var v = 10*intensity/1000;
+        // if (v < .01){
+        //   v = .01
+        // }
+        // if (v > 10) {
+        //   v = 10
+        // }
+        // console.log(v);
+        
+        group.rotation.y = time * 0.1;
 
-        // controls.update();
+        // ---
+        
+        renderer.render(scene, camera);
 
-        // // add at the end of your render loop
-        // capturer360.capture(renderer.domElement);
+        requestAnimationFrame(renderWithSound);
+
+        controls.update();
+
+        // add at the end of your render loop
+        capturer360.capture(renderer.domElement);
       }
     </script>
-
   </body>
 </html>
