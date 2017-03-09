@@ -1,0 +1,276 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        background-color: #000000;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      a {
+        color: #0078ff;
+      }
+
+      .dg {
+        right: auto!important;
+        left: 20px!important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script src="js/three.js"></script>
+    <script src="js/dat.gui.min.js"></script>
+    <script src="js/GPUParticleSystem.js" charset="utf-8"></script>
+
+  <script>
+    // globals ---
+    var scene;
+    var renderer;
+    var camera;
+
+    var clock = new THREE.Clock(true);
+    var container;
+    var controls;
+    var gui = new dat.GUI()
+    var options;
+    var particleSystem;
+    var spawnerOptions;
+    var tick = 0;
+
+    var audio;
+    var audioContext;
+    var analyser;
+    var len;
+    var source;
+    var fbc_array;
+    var data;
+    var total;
+
+    var environment;
+
+    var max = 0;
+
+
+    // functions ---
+    function handleResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function createParticleSystem() {
+      // The number of particles in a particle system is not easily changed.
+      var particleCount = 2000;
+       
+      // Particles are just individual vertices in a geometry
+      // Create the geometry that will hold all of the vertices
+      var particles = new THREE.Geometry();
+     
+      // Create the vertices and add them to the particles geometry
+      for (var p = 0; p < particleCount; p++) {
+       
+        // This will create all the vertices in a range of -200 to 200 in all directions
+        var x = Math.random() * 400 - 200;
+        var y = Math.random() * 400 - 200;
+        var z = Math.random() * 400 - 200;
+             
+        // Create the vertex
+        var particle = new THREE.Vector3(x, y, z);
+         
+        // Add the vertex to the geometry
+        particles.vertices.push(particle);
+      }
+     
+      // Create the material that will be used to render each vertex of the geometry
+      var particleMaterial = new THREE.PointsMaterial(
+          {color: 0xffffff, 
+           size: 4,
+           map: THREE.ImageUtils.loadTexture("textures/snowflake.png"),
+           blending: THREE.AdditiveBlending,
+           transparent: true,
+          });
+        
+      // Create the particle system
+      particleSystem = new THREE.Points(particles, particleMaterial);
+     
+      return particleSystem;  
+    }   
+
+    function init() {
+      // create a scene, that will hold all our elements such as objects, cameras and lights.
+      scene = new THREE.Scene();
+
+      // create a camera, which defines where we're looking at.
+      camera = new THREE.PerspectiveCamera(28, window.innerWidth / window.innerHeight, 1, 10000);
+
+      // create a renderer, sets the background color and the size
+      renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.physicallyCorrectLights = true;
+      
+      // add a scene ----------
+
+      // // add point light
+      // var bulbGeometry = new THREE.SphereGeometry( 0.02, 16, 8 );
+      // bulbLight = new THREE.PointLight( 0xffee88, 1, 100, 2 );
+
+      // bulbMat = new THREE.MeshStandardMaterial( {
+      //   emissive: 0xffffee,
+      //   emissiveIntensity: 1,
+      //   color: 0x000000
+      // });
+      // bulbLight.add( new THREE.Mesh( bulbGeometry, bulbMat ) );
+      // bulbLight.position.set( 0, 2, 0 );
+      // bulbLight.castShadow = true;
+      // scene.add( bulbLight );
+
+      // add environment
+      environment = createParticleSystem();
+      scene.add(environment);
+
+      // add a particle system
+      // The GPU Particle system extends THREE.Object3D, and so you can use it
+      // as you would any other scene graph component.  Particle positions will be
+      // relative to the position of the particle system, but you will probably only need one
+      // system for your whole scene
+      particleSystem = new THREE.GPUParticleSystem({
+        maxParticles: 250000
+      });
+      scene.add(particleSystem);
+
+      // position and point the camera to the center of the scene
+      camera.position.z = 100;
+
+      // add controls
+      // options passed during each spawned
+      options = {
+        position: new THREE.Vector3(),
+        positionRandomness: .3,
+        
+        velocity: new THREE.Vector3(),
+        velocityRandomness: .5,
+        
+        color: 0xaa88ff,
+        colorRandomness: .2,
+        
+        turbulence: .5,
+        lifetime: 5,
+        size: 5,
+        sizeRandomness: 1
+      };
+
+      spawnerOptions = {
+        spawnRate: 15000,
+        horizontalSpeed: 1.5,
+        verticalSpeed: 1.33,
+        timeScale: 1
+      };
+
+      gui.add(options, "velocityRandomness", 0, 3);
+      gui.add(options, "positionRandomness", 0, 3);
+      gui.add(options, "size", 1, 20);
+      gui.add(options, "sizeRandomness", 0, 25);
+      gui.add(options, "colorRandomness", 0, 1);
+      gui.add(options, "lifetime", .1, 10);
+      gui.add(options, "turbulence", 0, 1);
+      gui.add(spawnerOptions, "spawnRate", 10, 30000);
+      gui.add(spawnerOptions, "timeScale", -1, 1);
+
+      // set up sound
+      audio = new Audio();
+      audio.src = 'opus.mp3';
+      audio.autoplay = true;
+
+      audioContext = new (window.AudioContext || window.webkitAudioContext);
+      
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 1024; // change this to more or less triangles
+
+      len = analyser.fftSize / 16;
+
+      source = audioContext.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      // ----------
+
+      // add the output of the renderer to the html element
+      document.body.appendChild(renderer.domElement);
+
+      // call the render function, after the first render, interval is determined
+      // by requestAnimationFrame
+      render();
+    }
+
+    function render() {
+      fbc_array = new Uint8Array(analyser.frequencyBinCount);   // frequencyBinCount = 512
+      analyser.getByteFrequencyData(fbc_array);  // fill fbc_array with audio data 
+      var total = fbc_array.reduce(function(a, b) { return a + b; });
+      // for(var i=8; i<len; i++) {
+      //   total += fbc_array[i];
+      // }
+      var total = total * 0.0001;
+
+      var delta = clock.getDelta() * spawnerOptions.timeScale;
+      tick += delta;
+
+      if (tick < 0) {
+        tick = 0;
+      }
+
+      if (delta > 0) {
+        // options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
+        options.position.y = total;
+        // options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
+
+        options.velocity.x = -5;
+
+        for (var x=0; x<spawnerOptions.spawnRate * delta; x++) {
+          // Yep, that's really it. Spawning particles is super cheap, and once you spawn them, the rest of
+          // their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+          particleSystem.spawnParticle(options);
+        }
+      }
+
+      particleSystem.update(tick);
+
+      // ---
+
+
+      if((total*0.5) > max) {
+        max = total * 0.5;
+      }
+
+      var verts = environment.geometry.vertices;
+      for(var i = 0; i < verts.length; i++) {
+        var vert = verts[i];
+        if (vert.x < -200) {
+          vert.x = Math.random() * 400 - 200;
+        }
+        vert.x = vert.x - (10 * delta * max);
+      }
+      environment.geometry.verticesNeedUpdate = true;
+
+
+      renderer.render(scene, camera);
+
+      requestAnimationFrame(render);
+    }
+
+    // main ---
+
+    // calls the init function when the window is done loading.
+    window.onload = init;
+
+    // calls the handleResize function when the window is resized
+    window.addEventListener('resize', handleResize, false);
+ 
+  </script>
+</body>
+
+</html>
