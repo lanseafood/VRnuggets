@@ -1,0 +1,302 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <link href="css/main.css" rel="stylesheet" />
+    
+    <script src="js/three.min.js"></script>
+    <script src='js/OrbitControls.js'></script>
+    <!-- Include tar.js if you want to export PNG or JPEG -->
+    <script src="js/tar.js"></script>
+    <!-- Include download.js for easier file download -->
+    <script src="js/download.js"></script>
+    <!-- 360 capture section -->
+    <script src="js/CubemapToEquirectangular.js"></script>
+  </head>
+  <body>
+    <div id="container"></div>
+
+    <div id="controls">
+      <!-- <button class="startButton" onclick="startCapture360()">Record</button>
+      <button class="stopButton" onclick="stopCapture360()">Stop</button> -->
+
+      <form id="song">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search">
+        </div>
+      </form>
+
+      <audio id="myaudio" controls=controls src="" crossOrigin="anonymous"></audio>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    
+    <!-- movie capture section -->
+    <script src="js/CCapture.js"></script>
+
+    <!-- project specific -->
+
+    <script> 
+      // globals ---
+      var scene;
+      var camera;
+      var renderer;
+
+      var controls;
+
+      var center;
+      var left;
+      var right;
+
+      var audio;
+      var audioContext;
+      var analyser;
+      var len;
+      var source;
+      var fbc_array; //bars - bar data is from 0 - 256 in 512 bins. no sound is 0;
+      var data;
+
+      // project-specific
+      var colors = [0xC44BFD, 0xB61AFF, 0xAF06FF, 0x9600DC, 0x6C009F, 0xFE42A5, 0xFF0F8D, 0xFF0086, 0xEC007C, 0xC30067, 0x8256FD, 0x6229FF, 0x4E0EFF, 0x3B00DE, 0x2C01A4];
+      
+      var cubes = [];
+
+      var minRange = -800;
+      var maxRange = 800;
+
+      var cameraRotation = 0;
+      var cameraPosition = 0;
+
+      var clock = new THREE.Clock();
+
+      // Create a capturer that exports Equirectangular 360 JPG images in a TAR file
+      var capturer360 = new CCapture({
+        format: 'threesixty',
+        display: true,
+        autoSaveTime: 3,
+      });
+
+      function startCapture360(event) {
+        capturer360.start();
+      }
+
+      function stopCapture360(event) {
+        capturer360.stop();
+        capturer360.save();
+      }
+
+      // functions
+      function handleResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+
+      function getRandomInt(min, max) {
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min)) + min;
+      }
+
+
+      function randRange(min, max) {
+        return Math.floor(Math.random()*(max-min+1)+min);    
+      }
+
+      function degInRad(deg) {
+        return deg * Math.PI / 180;
+      }
+
+      function init() {
+        // create a scene, that will hold all the elements such as objects, cameras and lights.
+        scene = new THREE.Scene();
+
+        // create a camera, which defines where you're looking at.
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 1; // needs to be >0 for orbit controls to work
+
+        // create a renderer, sets the background color and the size
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // add a managed CubemapToEquirectangular camera
+        equiManaged = new CubemapToEquirectangular(renderer, true, "4K");
+        
+        // set up orbit controls
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        for (var i=minRange; i<maxRange; i+=30) {
+          for (var j=0; j<360; j+=10) {
+            var geometry = new THREE.BoxGeometry(10, 1, 10);
+
+            var colorIndex = randRange(0, colors.length-1);
+            var material = new THREE.MeshBasicMaterial({
+              color: colors[colorIndex],
+              wireframe: false
+            });
+
+            var cube = new THREE.Mesh(geometry, material);
+            
+            // var angle = (Math.PI/180) * j;
+            var angle = (Math.PI/180) * j;
+            cube.position.x = 100 * Math.cos(angle);
+            cube.position.y = 100 * Math.sin(angle);
+            cube.position.z = -i;
+
+            // changing this makes it look cool
+            var randAngle = randRange(1, 360);
+            cube.rotation.z = angle + degInRad(randAngle); 
+
+            cubes.push(cube);
+
+            scene.add(cube);
+          }  
+        }
+        
+        // end world ---
+
+        // add the output of the renderer to the html element
+        // document.body.appendChild(renderer.domElement);
+        var container = document.getElementById('container');
+        container.appendChild(renderer.domElement);
+        
+        // call the render function, after the first render, interval is determined
+        // by requestAnimationFrame
+        // renderer.render(scene, camera);
+        render();
+      }
+
+      function render() {
+        renderer.render(scene, camera);
+
+        requestAnimationFrame(render);
+
+        controls.update();
+      }
+
+      // calls the handleResize function when the window is resized
+      window.addEventListener('resize', handleResize, false);
+
+      // calls the init function when the window is done loading.
+      window.onload = init;
+    </script>
+
+    <script>
+      var main = function() {
+        $("#song").submit(function(event) {
+          // get the input
+          var query = $("input:first").val();
+
+          // search input against spotify api
+          // https://api.spotify.com/v1/search?q=artist:Lady+Gaga+title:Bad+Romance&type=track&limit=1
+          $.get("https://api.spotify.com/v1/search", {
+            q: query,
+            type: 'track',
+            limit: 1
+          }).done(function(data) {
+            var name = data.tracks.items[0].name;
+            var cover = data.tracks.items[0].album.images[0].url;
+            var artist = data.tracks.items[0].artists[0].name;
+            var preview_url = data.tracks.items[0].preview_url;
+
+            // $('.media img').attr('src', cover);
+            // $('.media-body .media-heading').text(name);
+            // $('.media-body p').text(artist);
+            $('audio').attr('src', preview_url);
+          });
+
+          // display the template
+          // $('.media').show();
+
+          // prevent the form from submitting
+          event.preventDefault();
+        });
+
+        audio = document.getElementById('myaudio');
+        audio.onplay = function() {
+          console.log('play');
+          getSound();
+          renderWithSound();
+        }
+
+      }
+
+      $(document).ready(main);
+
+      function getSound() {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+        // audioContext = new (window.AudioContext || window.webkitAudioContext);
+        
+        analyser = audioContext.createAnalyser();
+        analyser.smoothingTimeConstant = 0.8; //0<->1. 0 is no time smoothing
+        analyser.fftSize = 1024; // change this to more or less triangles
+
+        len = analyser.fftSize / 16;
+
+        source = audioContext.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+      }
+
+      function renderWithSound() {
+        var time = clock.getElapsedTime() * 0.5;
+
+        fbc_array = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(fbc_array); 
+
+        var sum = 0;
+        for(var i=0; i<fbc_array.length; i++) {
+          sum += fbc_array[i];
+        }
+        var avgLevel = sum / fbc_array.length; // average level
+        var normLevel = (avgLevel / 256) * 5;
+
+        var intensity = normLevel;
+
+        // ---
+
+        var speed = 5;
+
+        // move the cubes
+        for(var i=0; i<cubes.length; i++) {
+
+          // enqueue at the beginning
+          if(cubes[i].position.z > maxRange) {
+            cubes[i].position.z = minRange;
+          }
+          cubes[i].position.z += speed;
+          cubes[i].scale.y = 10 * intensity;
+          // cubes[i].scale.x = 0.1 * intensity;
+
+
+          // change the angle
+          // cubes[i].rotation.z += degInRad(1); 
+          // cubes[i].rotation.y += degInRad(1); 
+        }
+
+        // move the camera
+        cameraRotation += degInRad(0.5);
+        camera.rotation.z = cameraRotation;
+        camera.position.x = Math.sin( time ) * 0.2;
+        camera.position.y = Math.cos( time ) * 0.2
+        camera.lookAt(scene.position);
+
+        // ---
+
+        renderer.render(scene, camera);
+
+        requestAnimationFrame(renderWithSound);
+
+        controls.update();
+
+        // add at the end of your render loop
+        capturer360.capture(renderer.domElement);
+      }
+    </script>
+  </body>
+</html>
