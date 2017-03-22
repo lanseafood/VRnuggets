@@ -8,8 +8,9 @@ var controls;
 var camera_theta = 0;
 var camera_radius = 50;
 
-var shapes = [];
-var count = 0;
+var numPoints = 400;
+var points;
+var camera_theta = 0;
 
 // functions
 function handleResize() {
@@ -33,7 +34,7 @@ function init() {
   // create a renderer, sets the background color and the size
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(0x222D34, 1)
+  renderer.setClearColor(0x1a1a1a, 1)
 
   // set up orbit controls
   // controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -41,55 +42,65 @@ function init() {
 
   // start world ---
 
-  colors = {
-    blue: 0x4285F4,
-    red: 0xEA4335,
-    yellow: 0xFBBC05,
-    green: 0x34A853
+  var geometry = new THREE.Geometry();
+
+  for (var i = 0; i < 800; i ++) {
+    var point = new THREE.Vector3();
+    point.x = THREE.Math.randFloatSpread( 800 );
+    point.y = THREE.Math.randFloatSpread( 800 );
+    point.z = THREE.Math.randFloatSpread( 800 );
+
+    geometry.vertices.push(point)
   }
 
-  blue_material = new THREE.MeshBasicMaterial({
-    color: colors.blue,
-    wireframe: false
+  var material = new THREE.PointsMaterial( {
+    size: 3, //10 tobe visible when making 360 video
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+    sizeAttenuation: false,
   });
 
-  red_material = new THREE.MeshBasicMaterial({
-    color: colors.red,
-    wireframe: false
-  });
+  points = new THREE.Points(geometry, material );
+  scene.add(points);
 
-  yellow_material = new THREE.MeshBasicMaterial({
-    color: colors.yellow,
-    wireframe: false
-  });
+  console.log(points);
 
-  green_material = new THREE.MeshBasicMaterial({
-    color: colors.green,
-    wireframe: false
-  });
+  // for(var i=0; i<300; i++) {
+  //   var radius = randRange(1,3);
+  //   // var m = randRange(0, materials.length-1)
+  //   var x = randRange(-500, 500);
+  //   var y = randRange(-500, 500);
+  //   var z = randRange(-500, 500);
 
-  materials = [blue_material, red_material, yellow_material, green_material];
+  //   geometry = new THREE.SphereBufferGeometry(radius, 32, 32);
+    
+  //   material = new THREE.MeshPhongMaterial({
+  //     color: 0x05BAFF,
+  //     wireframe: false
+  //   });
 
-  for(var i=0; i<300; i++) {
-    var radius = randRange(5, 15);
-    var m = randRange(0, materials.length)
-    var x = randRange(-500, 500);
-    var y = randRange(-500, 500);
-    var z = randRange(-500, 500);
+  //   // shape = new THREE.Mesh(geometry, materials[m]);
+  //   shape = new THREE.Mesh(geometry, material);
+  //   shape.position.x = x;
+  //   shape.position.y = y;
+  //   shape.position.z = -z;
+  //   scene.add(shape);
 
-    geometry = new THREE.SphereGeometry(radius, 32, 32);
-    shape = new THREE.Mesh(geometry, materials[m]);
-    shape.position.x = x;
-    shape.position.y = y;
-    shape.position.z = -z;
-    scene.add(shape);
+  //   shapes.push(shape);
+  // }
 
-    shapes.push({shape: shape, radius: radius});
-  }
-  
-  // light
-  var light = new THREE.AmbientLight( 0x404040 ); 
-  scene.add(light);
+  // // light
+  // light = new THREE.PointLight( 0xffffff, 1, 0 );
+  // light.position.set(0,200,0);
+  // scene.add(light);
+
+  // light = new THREE.PointLight( 0xffffff, 1, 0 );
+  // light.position.set(100,200,100);
+  // scene.add(light);
+
+  // light = new THREE.PointLight( 0xffffff, 1, 0 );
+  // light.position.set(-100,-200,-100);
+  // scene.add(light);
 
   // end world ---
 
@@ -105,40 +116,35 @@ function init() {
 
 
 function render() {
-  count += 1;
-
-  if(count % 35 == 0) {
-    for(var i=0; i<shapes.length; i++) {
-      var shape = shapes[i].shape;
-      var radius = shapes[i].radius;
-
-      var current_radius = shape.geometry.parameters.radius;
-      shape.scale.x = 1.1;
-      shape.scale.y = 1.1;
-      shape.scale.z = 1.1;
-    }
-  }
-  else {
-    for(var i=0; i<shapes.length; i++) {
-      var shape = shapes[i].shape;
-      var radius = shapes[i].radius;
-
-      var current_radius = shape.geometry.parameters.radius;
-      shape.scale.x -= 0.01
-      shape.scale.y -= 0.01
-      shape.scale.z -= 0.01
-    }
-  }
-
   // update camera position
-  camera_theta += 0.1;
-  camera.position.x = camera_radius * Math.sin( THREE.Math.degToRad( camera_theta ) );
-  camera.position.y = camera_radius * Math.sin( THREE.Math.degToRad( camera_theta ) );
-  camera.position.z = camera_radius * Math.cos( THREE.Math.degToRad( camera_theta ) );
+  // camera_theta += 0.1;
+  // camera.position.x = camera_radius * Math.sin( THREE.Math.degToRad( camera_theta ) );
+  // camera.position.y = camera_radius * Math.sin( THREE.Math.degToRad( camera_theta ) );
+  // camera.position.z = camera_radius * Math.cos( THREE.Math.degToRad( camera_theta ) );
   camera.lookAt(scene.position);
 
+  // for(var i=0; i<shapes.length; i++) {
+  //   if(shapes[i].position.x < -700) {
+  //     shapes[i].position.x = 700;
+  //   }
+  //   if(shapes[i].position.y < -700) {
+  //     shapes[i].position.y = 700;
+  //   }
+  //   shapes[i].position.x -= randRange(1,5);
+  //   shapes[i].position.y -= randRange(1,5);
+  // }
+
+  for(var i=0; i<points.geometry.vertices.length; i++) {
+    if(points.geometry.vertices[i].x < -500) {
+      points.geometry.vertices[i].x = 500
+    }
+    points.geometry.vertices[i].x -= 1;
+  }
+  points.geometry.verticesNeedUpdate = true;
+
   // ---
-  
+
+
   renderer.render(scene, camera);
 
   requestAnimationFrame(render);
