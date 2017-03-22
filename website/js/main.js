@@ -8,9 +8,9 @@ var controls;
 var camera_theta = 0;
 var camera_radius = 50;
 
-var numPoints = 400;
-var points;
-var camera_theta = 0;
+var particleGroup;
+var clock = new THREE.Clock();
+
 
 // functions
 function handleResize() {
@@ -30,6 +30,7 @@ function init() {
   // create a camera, which defines where you're looking at.
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
   camera.position.z = 1; // needs to be >0 for orbit controls to work
+  camera.lookAt( scene.position );
 
   // create a renderer, sets the background color and the size
   renderer = new THREE.WebGLRenderer();
@@ -42,28 +43,47 @@ function init() {
 
   // start world ---
 
-  var geometry = new THREE.Geometry();
-
-  for (var i = 0; i < 800; i ++) {
-    var point = new THREE.Vector3();
-    point.x = THREE.Math.randFloatSpread( 800 );
-    point.y = THREE.Math.randFloatSpread( 800 );
-    point.z = THREE.Math.randFloatSpread( 800 );
-
-    geometry.vertices.push(point)
-  }
-
-  var material = new THREE.PointsMaterial( {
-    size: 3, //10 tobe visible when making 360 video
-    blending: THREE.AdditiveBlending,
-    transparent: true,
-    sizeAttenuation: false,
+  particleGroup = new SPE.Group({
+    texture: {
+      value: THREE.ImageUtils.loadTexture('./img/smokeparticle.png')
+    }
   });
 
-  points = new THREE.Points(geometry, material );
-  scene.add(points);
+  var colors = [
+    new THREE.Color(0x05BAFF),
+    new THREE.Color(0xFF2C00),
+  ]
 
-  console.log(points);
+  for(var i=1; i<200; i++) {
+    var colorIndex = randRange(0, colors.length-1)
+    var color = colors[colorIndex];
+
+    var emitter = new SPE.Emitter({
+      maxAge: {
+        value: randRange(1,3)
+      },
+      position: {
+        value: new THREE.Vector3(randRange(-200, 200), randRange(-200, 200), randRange(-200, 200)),
+        radius: randRange(1, 10),
+        spread: new THREE.Vector3( 3, 3, 3 )
+      },
+      velocity: {
+        value: new THREE.Vector3(3, 3, 3),
+        distribution: SPE.distributions.SPHERE
+      },
+      color: {
+        value: [ new THREE.Color('white'), color ]
+      },
+      size: {
+        value: 1
+      },
+      particleCount: 250
+    });
+
+    particleGroup.addEmitter(emitter);
+  }
+
+  scene.add(particleGroup.mesh);
 
   // for(var i=0; i<300; i++) {
   //   var radius = randRange(1,3);
@@ -114,13 +134,14 @@ function init() {
   render();
 }
 
+// Create particle group and emitter
 
 function render() {
   // update camera position
-  // camera_theta += 0.1;
-  // camera.position.x = camera_radius * Math.sin( THREE.Math.degToRad( camera_theta ) );
-  // camera.position.y = camera_radius * Math.sin( THREE.Math.degToRad( camera_theta ) );
-  // camera.position.z = camera_radius * Math.cos( THREE.Math.degToRad( camera_theta ) );
+  camera_theta += 0.1;
+  camera.position.x = camera_radius * Math.sin( THREE.Math.degToRad( camera_theta ) );
+  camera.position.y = camera_radius * Math.sin( THREE.Math.degToRad( camera_theta ) );
+  camera.position.z = camera_radius * Math.cos( THREE.Math.degToRad( camera_theta ) );
   camera.lookAt(scene.position);
 
   // for(var i=0; i<shapes.length; i++) {
@@ -134,13 +155,7 @@ function render() {
   //   shapes[i].position.y -= randRange(1,5);
   // }
 
-  for(var i=0; i<points.geometry.vertices.length; i++) {
-    if(points.geometry.vertices[i].x < -500) {
-      points.geometry.vertices[i].x = 500
-    }
-    points.geometry.vertices[i].x -= 1;
-  }
-  points.geometry.verticesNeedUpdate = true;
+  particleGroup.tick(clock.getDelta());
 
   // ---
 
