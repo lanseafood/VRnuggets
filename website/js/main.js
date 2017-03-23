@@ -88,9 +88,9 @@ function init() {
     particleGroup.addEmitter(emitter);
 
     var velocity = {
-      x: randRange(-2,2),
-      y: randRange(-2,2),
-      z: randRange(-2,2)
+      x: randRange(-0.5,0.5),
+      y: randRange(-0.5,0.5),
+      z: randRange(-0.5,0.5)
     }
     velocities.push(velocity);
   }
