@@ -9,6 +9,7 @@ var camera_theta = 0;
 var camera_radius = 50;
 
 var particleGroup;
+var velocities = [];
 var clock = new THREE.Clock();
 
 
@@ -54,22 +55,26 @@ function init() {
     new THREE.Color(0xFF2C00),
   ]
 
-  for(var i=1; i<200; i++) {
+  for(var i=1; i<100; i++) {
     var colorIndex = randRange(0, colors.length-1)
     var color = colors[colorIndex];
 
     var emitter = new SPE.Emitter({
       maxAge: {
-        value: randRange(1,3)
+        value: Math.random()
       },
       position: {
         value: new THREE.Vector3(randRange(-200, 200), randRange(-200, 200), randRange(-200, 200)),
-        radius: randRange(1, 10),
+        radius: randRange(1, 3),
         spread: new THREE.Vector3( 3, 3, 3 )
       },
       velocity: {
-        value: new THREE.Vector3(3, 3, 3),
+        value: new THREE.Vector3(randRange(1,5), randRange(1,5), randRange(1,5)),
         distribution: SPE.distributions.SPHERE
+      },
+      acceleration: {
+        value: new THREE.Vector3(0, 0, 0),
+        spread: new THREE.Vector3( 0, 0, 0)
       },
       color: {
         value: [ new THREE.Color('white'), color ]
@@ -81,6 +86,13 @@ function init() {
     });
 
     particleGroup.addEmitter(emitter);
+
+    var velocity = {
+      x: randRange(-2,2),
+      y: randRange(-2,2),
+      z: randRange(-2,2)
+    }
+    velocities.push(velocity);
   }
 
   scene.add(particleGroup.mesh);
@@ -154,6 +166,41 @@ function render() {
   //   shapes[i].position.x -= randRange(1,5);
   //   shapes[i].position.y -= randRange(1,5);
   // }
+
+  for(var i=0; i<particleGroup.emitters.length; i++) {
+    var x = particleGroup.emitters[i].position._value.x;
+    var y = particleGroup.emitters[i].position._value.y; 
+    var z = particleGroup.emitters[i].position._value.z;
+
+    var vx = velocities[i].x;
+    var vy = velocities[i].y;
+    var vz = velocities[i].z;
+
+    if(x > 150 && vx > 0) {
+      x = -150;
+    }
+    if(x < 150 && vx < 0) {
+      x = 150;
+    }
+
+    if(y > 150 && vy > 0) {
+      y = -150;
+    }
+    if(y < 150 && vy < 0) {
+      y = 150;
+    }
+
+    if(z > 150 && vz > 0) {
+      z = -150;
+    }
+    if(z < 150 && vz < 0) {
+      z = 150;
+    }
+
+    particleGroup.emitters[i].position.value = particleGroup.emitters[i].position.value.set(x+vx, y+vy, z+vz);
+  }
+  
+
 
   particleGroup.tick(clock.getDelta());
 
